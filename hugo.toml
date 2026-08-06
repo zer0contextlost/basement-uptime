@@ -1,7 +1,6 @@
 baseURL = "/"
 languageCode = "en-us"
 title = "Basement Uptime"
-theme = ""
 
 [params]
   description = "Homelab and self-hosting notes from someone who actually runs the thing."
