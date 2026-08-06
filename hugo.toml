@@ -1,0 +1,14 @@
+baseURL = "/"
+languageCode = "en-us"
+title = "Basement Uptime"
+theme = ""
+
+[params]
+  description = "Homelab and self-hosting notes from someone who actually runs the thing."
+  tagline = "Notes from a rack in a basement, not a marketing team."
+
+[taxonomies]
+  tag = "tags"
+
+[markup.goldmark.renderer]
+  unsafe = true
