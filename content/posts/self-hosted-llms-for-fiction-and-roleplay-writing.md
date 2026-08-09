@@ -1,15 +1,16 @@
 ---
-title: "Self-Hosting an Uncensored LLM for Fiction Writing: Hardware, Models, and Stack"
+title: "Self-Hosted LLMs for Fiction and Roleplay Writing: Hardware, Models, and Stack"
 date: 2026-08-09
-description: "Why homelabbers run local LLMs for fiction and roleplay writing instead of a hosted API, what 'uncensored' and 'abliterated' actually mean, and the hardware/quant tiers r/LocalLLaMA converges on for it."
+description: "Why homelabbers run local LLMs for fiction and roleplay writing instead of a hosted API, what 'uncensored' and 'abliterated' actually mean, and the hardware/quant tiers r/LocalLLaMA and r/LocalLLM converge on for it."
 tags: ["llm", "homelab", "self-hosting", "gpu"]
 ---
 
 Hosted chat APIs apply content filters tuned for a general audience, which
 means anything even adjacent to mature fiction — violence, adult themes,
 morally gray characters — can get flagged, refused, or silently softened
-mid-story. That's the main reason r/LocalLLaMA has a whole recurring
-thread genre around "best uncensored model for writing." Run the model on
+mid-story. That's the main reason r/LocalLLaMA and r/LocalLLM both have a
+whole recurring thread genre around "best uncensored model for writing."
+Run the model on
 your own hardware and there's no third-party filter sitting between your
 prompt and the output, no chat log leaving the house, and no surprise
 policy change breaking a story you're partway through.
@@ -51,20 +52,25 @@ choosing quant level against the same budget as any other local model:
 
 Rule of thumb across all tiers: budget the quoted quant size for weights,
 then add 15-25% on top for KV cache and context overhead before you call
-a card "enough."
+a card "enough." Newer quant formats like IQ4_XS and the GGUF-V3 imatrix
+builds do a better job preserving activation precision than the older
+plain Q4 quants, which matters most on the smaller end of this table
+where every bit of precision counts.
 
 ## Models people actually cite
 
-Recurring names in current LocalLLaMA/SillyTavern-community roundups, by
-tier:
+Recurring names across current LocalLLaMA, LocalLLM, and
+SillyTavern-community roundups, by tier:
 
-- **Small (7-9B)** — Dolphin 3.0 Mistral, Gemma abliterated variants.
-  Runs on modest gaming GPUs, best for quick scenes rather than long
-  multi-chapter continuity.
-- **Mid (12-24B)** — MythoMax-L2-13B is the long-running default a lot of
-  comparisons still benchmark against; newer entrants like Dan's
-  PersonalityEngine (24B) add tool-use and longer-context handling on top
-  of the same roleplay/story focus.
+- **Small (7-9B)** — Dolphin 3.0 Mistral and OpenHermes 2.5 Mistral for
+  modest gaming GPUs, plus Gemma abliterated variants. Best for quick
+  scenes rather than long multi-chapter continuity.
+- **Mid (12-34B)** — MythoMax-L2-13B is the long-running default a lot of
+  comparisons still benchmark against; Qwen 3.5 gets recommended broadly
+  across use cases including this one; Nous Hermes 2 Yi 34B and Dan's
+  PersonalityEngine (24B) both add stronger instruction-following and
+  longer-context handling on top of the same roleplay/story focus, at the
+  cost of needing a beefier card.
 - **Large (70B+)** — Midnight Rose and Midnight Miqu show up repeatedly
   for prose quality and keeping a character consistent across a long
   story, and reportedly hold up reasonably even at lower quants if you're
