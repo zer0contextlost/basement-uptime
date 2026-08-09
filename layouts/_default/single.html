@@ -1,8 +1,9 @@
 {{ define "title" }}{{ .Title }} · {{ .Site.Title }}{{ end }}
 {{ define "main" }}
 <article class="post">
+  <p class="list-label">$ cat {{ .File.LogicalName }}</p>
   <h1>{{ .Title }}</h1>
-  <p class="meta">{{ .Date.Format "January 2, 2006" }}{{ if .Params.tags }} · {{ range .Params.tags }}<span class="tag">{{ . }}</span> {{ end }}{{ end }}</p>
+  <p class="meta">{{ .Date.Format "2006-01-02" }}{{ if .Params.tags }} · {{ range .Params.tags }}<span class="tag">{{ . }}</span> {{ end }}{{ end }}</p>
   <div class="content">
     {{ .Content }}
   </div>

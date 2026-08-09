@@ -1,7 +1,11 @@
 <header class="site-header">
-  <div class="wrap">
-    <a class="brand" href="{{ "/" | relURL }}">{{ .Site.Title }}</a>
+  <div class="term-bar">
+    <span class="term-dots"><span></span><span></span><span></span></span>
+    <span class="term-path">~/{{ .Site.Title | urlize }}</span>
+  </div>
+  <div class="wrap site-header-inner">
+    <a class="brand" href="{{ "/" | relURL }}"><span class="prompt">$</span> {{ .Site.Title }}</a>
     <span class="tagline">{{ .Site.Params.tagline }}</span>
-    <nav class="nav"><a href="{{ "/about/" | relURL }}">About</a></nav>
+    <nav class="nav"><a href="{{ "/about/" | relURL }}">./about</a></nav>
   </div>
 </header>
