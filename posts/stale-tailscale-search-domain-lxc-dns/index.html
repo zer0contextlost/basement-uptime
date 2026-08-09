@@ -1,0 +1,36 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>The Stale Search-Domain Bug That Silently Breaks DNS in Fresh LXC Containers · Basement Uptime</title><meta name=description content="A dead resolver from a Tailscale experiment months ago kept leaking into brand-new containers, breaking DNS resolution in ways that look like an app bug. Here's how it propagates and the two ways to catch it."><link rel=stylesheet href=/css/style.css><link rel=alternate type=application/rss+xml href=/index.xml title="Basement Uptime"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3797749320386385" crossorigin=anonymous></script></head><body><header class=site-header><div class=term-bar><span class=term-dots><span></span><span></span><span></span></span>
+<span class=term-path>~/basement-uptime</span></div><div class="wrap site-header-inner"><a class=brand href=/><span class=prompt>$</span> Basement Uptime</a>
+<span class=tagline>Notes from a rack in a basement, not a marketing team.</span><nav class=nav><a href=/about/>./about</a></nav></div></header><main class=wrap><article class=post><p class=list-label>$ cat stale-tailscale-search-domain-lxc-dns.md</p><h1>The Stale Search-Domain Bug That Silently Breaks DNS in Fresh LXC Containers</h1><p class=meta>2026-08-06 · <span class=tag>dns</span> <span class=tag>proxmox</span> <span class=tag>lxc</span> <span class=tag>tailscale</span></p><div class=content><p>Symptom: a brand-new container fails an <code>apt-get install</code> with a
+resolution error, or some app inside it can&rsquo;t reach the outside world,
+even though the container clearly has a route out and <code>ping &lt;ip></code> to a raw
+address works fine. The instinct is to blame the app. Check
+<code>/etc/resolv.conf</code> first.</p><h2 id=what-was-actually-happening>What was actually happening</h2><p>Run Tailscale on a Proxmox host or one of its containers, even briefly,
+even just to test something, then remove it, and it can leave behind a
+stale <code>search</code> directive in the resolver config:</p><pre tabindex=0><code>search taild14820.ts.net
+</code></pre><p>Tailscale&rsquo;s MagicDNS appends a search domain like this so short hostnames
+resolve within your tailnet. Uninstall Tailscale without cleaning that
+config up and the search domain doesn&rsquo;t go away on its own. If it ends up
+in the <em>host&rsquo;s</em> base resolver config rather than just one container&rsquo;s, it
+keeps quietly propagating into every new guest created afterward, because
+<code>pct create</code> without an explicit <code>--searchdomain</code> flag inherits from the
+host&rsquo;s own resolver state at creation time.</p><p>The practical effect: any bare hostname lookup gets <code>.taild14820.ts.net</code>
+appended before the real domain is tried, adding a failing lookup against
+a tailnet with nothing registered in front of every real one. Some
+resolvers handle this gracefully and just take the latency hit. Others
+surface it as an outright failure.</p><h2 id=how-to-catch-it>How to catch it</h2><p>Two places to check whenever DNS looks flaky on a freshly created guest:</p><pre tabindex=0><code>cat /etc/resolv.conf
+</code></pre><p>Look for a <code>search</code> line referencing a domain you don&rsquo;t recognize.
+<code>*.ts.net</code> is the Tailscale MagicDNS tell, but the same class of bug can
+come from any VPN or mesh tool that rewrites resolver config and doesn&rsquo;t
+clean up on removal.</p><p>If it&rsquo;s present on more than one freshly created guest, the leak is at
+the host level, not per-container. Check the Proxmox host&rsquo;s own
+<code>/etc/resolv.conf</code> too. That&rsquo;s very likely where new containers are
+inheriting it from.</p><h2 id=fixes-in-order-of-correctness>Fixes, in order of correctness</h2><ol><li>Best: find and remove the stale entry at the host level, so it stops
+propagating to every future container. This usually means whatever
+config file the VPN tool&rsquo;s uninstall left behind. Check for anything
+still referencing the mesh&rsquo;s DNS.</li><li>Workaround at creation time: pass an explicit <code>--searchdomain</code> when
+running <code>pct create</code>, overriding whatever the host would otherwise
+hand the new container.</li><li>Per-container fix: edit <code>/etc/resolv.conf</code> directly inside an
+already-running container. Fine for a one-off. It doesn&rsquo;t stop the
+next container you create from inheriting the same stale config.</li></ol><p>Managing more than one or two containers means the host-level source is
+worth fixing once it&rsquo;s confirmed. Chasing the same bug container by
+container gets old fast.</p></div></article></main><footer class=site-footer><div class=wrap><p><span class=prompt>$</span> echo "&copy; 2026 Basement Uptime"</p><p class=disclosure>Some links on this site may be affiliate links — if you buy through them we may earn a small commission at no extra cost to you.</p></div></footer></body></html>

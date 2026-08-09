@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Homelab on Basement Uptime</title><link>https://uptime.zer0contextlost.net/tags/homelab/</link><description>Recent content in Homelab on Basement Uptime</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Thu, 06 Aug 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://uptime.zer0contextlost.net/tags/homelab/index.xml" rel="self" type="application/rss+xml"/><item><title>ip neigh show Lies: Always arping Before You Assign a Static LAN IP</title><link>https://uptime.zer0contextlost.net/posts/arping-before-static-ip/</link><pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate><guid>https://uptime.zer0contextlost.net/posts/arping-before-static-ip/</guid><description>&lt;p&gt;You&amp;rsquo;re spinning up a new container or VM and need a free static IP. The
+instinctive check:&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;ip neigh show
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;If the candidate address isn&amp;rsquo;t in the table, it looks free. It isn&amp;rsquo;t
+necessarily. The neighbor table only holds entries for hosts your machine
+has actually exchanged traffic with recently, usually within the last few
+minutes to a few hours depending on the kernel&amp;rsquo;s &lt;code&gt;gc_stale_time&lt;/code&gt; and
+related sysctls. A device that&amp;rsquo;s been quietly sitting on the network
+without talking to &lt;em&gt;this particular host&lt;/em&gt; won&amp;rsquo;t show up. Stale entry or
+not, it just isn&amp;rsquo;t there.&lt;/p&gt;</description></item><item><title>Passing a USB Serial or Webcam Device Into an Unprivileged Proxmox LXC</title><link>https://uptime.zer0contextlost.net/posts/usb-serial-into-unprivileged-lxc/</link><pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate><guid>https://uptime.zer0contextlost.net/posts/usb-serial-into-unprivileged-lxc/</guid><description>&lt;p&gt;Unprivileged LXC containers are the right default on Proxmox. Root inside
+the container isn&amp;rsquo;t root on the host. That same UID remapping breaks the
+usual instinct for granting device access: add the service user to
+&lt;code&gt;dialout&lt;/code&gt; or &lt;code&gt;video&lt;/code&gt; or whatever group. It won&amp;rsquo;t work, and it&amp;rsquo;s worth
+knowing why before an hour goes into staring at a permission-denied error.&lt;/p&gt;
+&lt;h2 id="why-group-membership-fails"&gt;Why group membership fails&lt;/h2&gt;
+&lt;p&gt;When an unprivileged container bind-mounts a host device node, the
+container&amp;rsquo;s view of that device&amp;rsquo;s ownership goes through the same UID/GID
+remapping as everything else. A device owned by &lt;code&gt;root:dialout&lt;/code&gt; on the
+host shows up inside the container as some remapped, meaningless UID:GID
+pair, typically rendered as &lt;code&gt;nobody:nogroup&lt;/code&gt;. Adding your service user to
+a group inside the container does nothing. The group the device actually
+belongs to, from the container&amp;rsquo;s point of view, isn&amp;rsquo;t a group that exists
+in any meaningful sense inside that namespace.&lt;/p&gt;</description></item></channel></rss>

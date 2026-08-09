@@ -1,0 +1,58 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Fixing UID/GID Permission Hell When Bind-Mounting Host Storage Into Unprivileged LXC · Basement Uptime</title><meta name=description content="Why files bind-mounted into an unprivileged Proxmox LXC show up as nobody:nogroup, and how to fix it properly with subuid/subgid mapping instead of going privileged."><link rel=stylesheet href=/css/style.css><link rel=alternate type=application/rss+xml href=/index.xml title="Basement Uptime"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3797749320386385" crossorigin=anonymous></script></head><body><header class=site-header><div class=term-bar><span class=term-dots><span></span><span></span><span></span></span>
+<span class=term-path>~/basement-uptime</span></div><div class="wrap site-header-inner"><a class=brand href=/><span class=prompt>$</span> Basement Uptime</a>
+<span class=tagline>Notes from a rack in a basement, not a marketing team.</span><nav class=nav><a href=/about/>./about</a></nav></div></header><main class=wrap><article class=post><p class=list-label>$ cat fixing-uid-gid-permission-hell-when-bind-mounting-host-stora.md</p><h1>Fixing UID/GID Permission Hell When Bind-Mounting Host Storage Into Unprivileged LXC</h1><p class=meta>2026-08-06 · <span class=tag>proxmox</span> <span class=tag>lxc</span></p><div class=content><p>Bind-mount a host directory into an unprivileged LXC container and watch
+every file inside turn into <code>nobody:nogroup</code>, or worse, <code>65534:65534</code>.
+That&rsquo;s the UID mapping problem. It looks like a bug the first time you hit
+it. It&rsquo;s actually the container isolation working exactly as designed,
+just not the way most people expect.</p><h2 id=why-this-happens>Why this happens</h2><p>Unprivileged LXC containers remap UIDs/GIDs so that root inside the
+container (UID 0) is <em>not</em> root on the host. Container UID 0 maps to some
+high UID on the host, by default something like 100000. The whole UID
+range inside the container (0-65535) shifts up by that offset on the host
+side.</p><p>That&rsquo;s good for security. If something breaks out of the container, it
+doesn&rsquo;t get host root. But it means a bind-mounted host directory shows up
+with whatever the <em>mapped</em> UID/GID resolves to, not the UID/GID you&rsquo;re
+used to. A file owned by <code>1000:1000</code> on the host shows up as some huge,
+meaningless UID inside the container, and Proxmox renders that as
+<code>nobody:nogroup</code> because there&rsquo;s no matching entry in the container&rsquo;s
+passwd file.</p><p>The two bad fixes people reach for: making the container privileged
+(defeats the point of using unprivileged containers) or <code>chmod -R 777</code> on
+the mount (defeats the point of having permissions at all). Neither is
+necessary.</p><h2 id=the-real-fix-idmap-entries>The real fix: idmap entries</h2><p>Proxmox lets you add explicit UID/GID mapping entries per container so
+specific host UID ranges pass through unshifted, or shifted to a value you
+choose, instead of using the default offset for everything.</p><p>Check what subuid/subgid ranges are allocated to the container&rsquo;s user
+(usually <code>root</code> on the Proxmox host) in <code>/etc/subuid</code> and <code>/etc/subgid</code>.
+You&rsquo;ll see something like:</p><pre tabindex=0><code>root:100000:65536
+</code></pre><p>That&rsquo;s the default 65536-UID block starting at 100000. To carve out an
+exception for a specific UID, say your media stack runs as UID 1000 on
+both host and container, add <code>lxc.idmap</code> lines to the container config
+(<code>/etc/pve/lxc/&lt;vmid>.conf</code>):</p><pre tabindex=0><code>lxc.idmap: u 0 100000 1000
+lxc.idmap: u 1000 1000 1
+lxc.idmap: u 1001 101001 64535
+lxc.idmap: g 0 100000 1000
+lxc.idmap: g 1000 1000 1
+lxc.idmap: g 1001 101001 64535
+</code></pre><p>Three ranges per type, user and group: everything below 1000 uses the
+normal offset mapping, UID 1000 itself maps straight through to host UID
+1000, everything above 1000 goes back to the normal offset. Container UID
+1000 and host UID 1000 now refer to the same identity, so a bind-mounted
+directory owned by <code>1000:1000</code> on the host is readable and writable as the
+expected user inside the container, no offset weirdness.</p><p>The corresponding ranges also need to actually be present in
+<code>/etc/subuid</code>/<code>/etc/subgid</code> for the mapping user. If the range isn&rsquo;t
+allocated there, the container fails to start with a permission error on
+boot. That&rsquo;s the most common way people discover this feature exists in
+the first place.</p><h2 id=a-simpler-alternative-for-docker-in-lxc-setups>A simpler alternative for Docker-in-LXC setups</h2><p>Running Docker inside the LXC, a common pattern for self-hosted app
+stacks, it&rsquo;s often easier to standardize on one UID/GID for everything.
+Set <code>PUID</code>/<code>PGID</code> environment variables to <code>1000:1000</code> on every container
+image that supports it (most linuxserver.io images do), create a matching
+user on the Proxmox host, and use the idmap trick above once. Every bind
+mount, every app, every backup script agrees on the same numbers after
+that.</p><h2 id=checking-your-work>Checking your work</h2><p>After adding idmap entries and restarting the container, confirm from
+inside the container:</p><pre tabindex=0><code>stat -c &#39;%u:%g&#39; /path/to/bind/mount
+ls -ln /path/to/bind/mount
+</code></pre><p>Cross-check against <code>ls -ln</code> on the host side for the same directory. If
+the numeric UID/GID match on both sides, the mapping is correct, and you
+shouldn&rsquo;t need <code>chown</code> gymnastics or loosened permissions for the
+container&rsquo;s processes to read and write the data.</p><p>It&rsquo;s a few minutes of config editing instead of running privileged
+containers you don&rsquo;t need, or leaving directories world-writable because
+it was easier than fixing the mapping. Do it once for your standard UID
+and it&rsquo;s a copy-paste for every unprivileged container after that.</p></div></article></main><footer class=site-footer><div class=wrap><p><span class=prompt>$</span> echo "&copy; 2026 Basement Uptime"</p><p class=disclosure>Some links on this site may be affiliate links — if you buy through them we may earn a small commission at no extra cost to you.</p></div></footer></body></html>

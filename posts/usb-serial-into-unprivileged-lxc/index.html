@@ -1,0 +1,34 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Passing a USB Serial or Webcam Device Into an Unprivileged Proxmox LXC · Basement Uptime</title><meta name=description content="Group membership doesn't save you here — unprivileged LXC UID remapping means the container sees your bind-mounted device as nobody:nogroup. What actually grants access, and the two config lines that do it."><link rel=stylesheet href=/css/style.css><link rel=alternate type=application/rss+xml href=/index.xml title="Basement Uptime"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3797749320386385" crossorigin=anonymous></script></head><body><header class=site-header><div class=term-bar><span class=term-dots><span></span><span></span><span></span></span>
+<span class=term-path>~/basement-uptime</span></div><div class="wrap site-header-inner"><a class=brand href=/><span class=prompt>$</span> Basement Uptime</a>
+<span class=tagline>Notes from a rack in a basement, not a marketing team.</span><nav class=nav><a href=/about/>./about</a></nav></div></header><main class=wrap><article class=post><p class=list-label>$ cat usb-serial-into-unprivileged-lxc.md</p><h1>Passing a USB Serial or Webcam Device Into an Unprivileged Proxmox LXC</h1><p class=meta>2026-08-06 · <span class=tag>proxmox</span> <span class=tag>lxc</span> <span class=tag>homelab</span></p><div class=content><p>Unprivileged LXC containers are the right default on Proxmox. Root inside
+the container isn&rsquo;t root on the host. That same UID remapping breaks the
+usual instinct for granting device access: add the service user to
+<code>dialout</code> or <code>video</code> or whatever group. It won&rsquo;t work, and it&rsquo;s worth
+knowing why before an hour goes into staring at a permission-denied error.</p><h2 id=why-group-membership-fails>Why group membership fails</h2><p>When an unprivileged container bind-mounts a host device node, the
+container&rsquo;s view of that device&rsquo;s ownership goes through the same UID/GID
+remapping as everything else. A device owned by <code>root:dialout</code> on the
+host shows up inside the container as some remapped, meaningless UID:GID
+pair, typically rendered as <code>nobody:nogroup</code>. Adding your service user to
+a group inside the container does nothing. The group the device actually
+belongs to, from the container&rsquo;s point of view, isn&rsquo;t a group that exists
+in any meaningful sense inside that namespace.</p><h2 id=what-actually-works-world-read-write-at-the-host-level>What actually works: world read-write, at the host level</h2><p>Make the device world-RW on the host via a udev rule, so permissions don&rsquo;t
+depend on group membership surviving the remap at all.</p><pre tabindex=0><code># /etc/udev/rules.d/99-mydevice.rules  (on the Proxmox host)
+SUBSYSTEM==&#34;tty&#34;, ATTRS{idVendor}==&#34;1a86&#34;, ATTRS{idProduct}==&#34;7523&#34;, MODE=&#34;0666&#34;
+</code></pre><p>Match on vendor/product ID (<code>lsusb</code> shows both) rather than a device path
+like <code>/dev/ttyUSB0</code>. Those paths shift if other USB-serial adapters get
+plugged in a different order after a reboot; the vendor/product ID pair
+doesn&rsquo;t.</p><p>Then, on the container side, two lines in <code>/etc/pve/lxc/&lt;vmid>.conf</code>:</p><pre tabindex=0><code>lxc.cgroup2.devices.allow: c 188:0 rw
+lxc.mount.entry: /dev/ttyUSB0 dev/ttyUSB0 none bind,optional,create=file
+</code></pre><p>The major:minor pair (<code>188:0</code> here, for a USB-serial <code>ttyUSB0</code>) has to
+match what the device actually enumerates as on the host. Check with
+<code>ls -la /dev/ttyUSB0</code> before writing the config. A UVC webcam behaves the
+same way but typically exposes two nodes, a capture node and a metadata
+node, so both need cgroup allow and mount lines.</p><h2 id=two-gotchas-up-front>Two gotchas up front</h2><p>New <code>lxc.mount.entry</code> lines only take effect at container start, not a
+service restart. Adding device passthrough to a running container means a
+full <code>pct reboot &lt;vmid></code>, not restarting whatever service inside is trying
+to use the device.</p><p>Re-verify the major:minor pairing if the device is ever unplugged and
+replugged alongside other USB-serial devices. Enumeration order isn&rsquo;t
+guaranteed, and a config pinned to the wrong major:minor silently fails to
+grant access to the device you actually care about.</p><p>Once both pieces are in place, the container sees a world-RW device node
+and doesn&rsquo;t need a matching group at all. That&rsquo;s the whole trick for
+working around the UID remap.</p></div></article></main><footer class=site-footer><div class=wrap><p><span class=prompt>$</span> echo "&copy; 2026 Basement Uptime"</p><p class=disclosure>Some links on this site may be affiliate links — if you buy through them we may earn a small commission at no extra cost to you.</p></div></footer></body></html>

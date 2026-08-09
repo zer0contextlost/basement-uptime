@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Lxc on Basement Uptime</title><link>https://uptime.zer0contextlost.net/tags/lxc/</link><description>Recent content in Lxc on Basement Uptime</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Thu, 06 Aug 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://uptime.zer0contextlost.net/tags/lxc/index.xml" rel="self" type="application/rss+xml"/><item><title>Fixing UID/GID Permission Hell When Bind-Mounting Host Storage Into Unprivileged LXC</title><link>https://uptime.zer0contextlost.net/posts/fixing-uid-gid-permission-hell-when-bind-mounting-host-stora/</link><pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate><guid>https://uptime.zer0contextlost.net/posts/fixing-uid-gid-permission-hell-when-bind-mounting-host-stora/</guid><description>&lt;p&gt;Bind-mount a host directory into an unprivileged LXC container and watch
+every file inside turn into &lt;code&gt;nobody:nogroup&lt;/code&gt;, or worse, &lt;code&gt;65534:65534&lt;/code&gt;.
+That&amp;rsquo;s the UID mapping problem. It looks like a bug the first time you hit
+it. It&amp;rsquo;s actually the container isolation working exactly as designed,
+just not the way most people expect.&lt;/p&gt;
+&lt;h2 id="why-this-happens"&gt;Why this happens&lt;/h2&gt;
+&lt;p&gt;Unprivileged LXC containers remap UIDs/GIDs so that root inside the
+container (UID 0) is &lt;em&gt;not&lt;/em&gt; root on the host. Container UID 0 maps to some
+high UID on the host, by default something like 100000. The whole UID
+range inside the container (0-65535) shifts up by that offset on the host
+side.&lt;/p&gt;</description></item><item><title>Passing a USB Serial or Webcam Device Into an Unprivileged Proxmox LXC</title><link>https://uptime.zer0contextlost.net/posts/usb-serial-into-unprivileged-lxc/</link><pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate><guid>https://uptime.zer0contextlost.net/posts/usb-serial-into-unprivileged-lxc/</guid><description>&lt;p&gt;Unprivileged LXC containers are the right default on Proxmox. Root inside
+the container isn&amp;rsquo;t root on the host. That same UID remapping breaks the
+usual instinct for granting device access: add the service user to
+&lt;code&gt;dialout&lt;/code&gt; or &lt;code&gt;video&lt;/code&gt; or whatever group. It won&amp;rsquo;t work, and it&amp;rsquo;s worth
+knowing why before an hour goes into staring at a permission-denied error.&lt;/p&gt;
+&lt;h2 id="why-group-membership-fails"&gt;Why group membership fails&lt;/h2&gt;
+&lt;p&gt;When an unprivileged container bind-mounts a host device node, the
+container&amp;rsquo;s view of that device&amp;rsquo;s ownership goes through the same UID/GID
+remapping as everything else. A device owned by &lt;code&gt;root:dialout&lt;/code&gt; on the
+host shows up inside the container as some remapped, meaningless UID:GID
+pair, typically rendered as &lt;code&gt;nobody:nogroup&lt;/code&gt;. Adding your service user to
+a group inside the container does nothing. The group the device actually
+belongs to, from the container&amp;rsquo;s point of view, isn&amp;rsquo;t a group that exists
+in any meaningful sense inside that namespace.&lt;/p&gt;</description></item><item><title>The Stale Search-Domain Bug That Silently Breaks DNS in Fresh LXC Containers</title><link>https://uptime.zer0contextlost.net/posts/stale-tailscale-search-domain-lxc-dns/</link><pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate><guid>https://uptime.zer0contextlost.net/posts/stale-tailscale-search-domain-lxc-dns/</guid><description>&lt;p&gt;Symptom: a brand-new container fails an &lt;code&gt;apt-get install&lt;/code&gt; with a
+resolution error, or some app inside it can&amp;rsquo;t reach the outside world,
+even though the container clearly has a route out and &lt;code&gt;ping &amp;lt;ip&amp;gt;&lt;/code&gt; to a raw
+address works fine. The instinct is to blame the app. Check
+&lt;code&gt;/etc/resolv.conf&lt;/code&gt; first.&lt;/p&gt;
+&lt;h2 id="what-was-actually-happening"&gt;What was actually happening&lt;/h2&gt;
+&lt;p&gt;Run Tailscale on a Proxmox host or one of its containers, even briefly,
+even just to test something, then remove it, and it can leave behind a
+stale &lt;code&gt;search&lt;/code&gt; directive in the resolver config:&lt;/p&gt;</description></item></channel></rss>

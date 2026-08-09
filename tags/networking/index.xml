@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Networking on Basement Uptime</title><link>https://uptime.zer0contextlost.net/tags/networking/</link><description>Recent content in Networking on Basement Uptime</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Thu, 06 Aug 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://uptime.zer0contextlost.net/tags/networking/index.xml" rel="self" type="application/rss+xml"/><item><title>ip neigh show Lies: Always arping Before You Assign a Static LAN IP</title><link>https://uptime.zer0contextlost.net/posts/arping-before-static-ip/</link><pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate><guid>https://uptime.zer0contextlost.net/posts/arping-before-static-ip/</guid><description>&lt;p&gt;You&amp;rsquo;re spinning up a new container or VM and need a free static IP. The
+instinctive check:&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;ip neigh show
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;If the candidate address isn&amp;rsquo;t in the table, it looks free. It isn&amp;rsquo;t
+necessarily. The neighbor table only holds entries for hosts your machine
+has actually exchanged traffic with recently, usually within the last few
+minutes to a few hours depending on the kernel&amp;rsquo;s &lt;code&gt;gc_stale_time&lt;/code&gt; and
+related sysctls. A device that&amp;rsquo;s been quietly sitting on the network
+without talking to &lt;em&gt;this particular host&lt;/em&gt; won&amp;rsquo;t show up. Stale entry or
+not, it just isn&amp;rsquo;t there.&lt;/p&gt;</description></item></channel></rss>

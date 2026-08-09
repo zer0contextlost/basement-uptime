@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dns on Basement Uptime</title><link>https://uptime.zer0contextlost.net/tags/dns/</link><description>Recent content in Dns on Basement Uptime</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Thu, 06 Aug 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://uptime.zer0contextlost.net/tags/dns/index.xml" rel="self" type="application/rss+xml"/><item><title>The Stale Search-Domain Bug That Silently Breaks DNS in Fresh LXC Containers</title><link>https://uptime.zer0contextlost.net/posts/stale-tailscale-search-domain-lxc-dns/</link><pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate><guid>https://uptime.zer0contextlost.net/posts/stale-tailscale-search-domain-lxc-dns/</guid><description>&lt;p&gt;Symptom: a brand-new container fails an &lt;code&gt;apt-get install&lt;/code&gt; with a
+resolution error, or some app inside it can&amp;rsquo;t reach the outside world,
+even though the container clearly has a route out and &lt;code&gt;ping &amp;lt;ip&amp;gt;&lt;/code&gt; to a raw
+address works fine. The instinct is to blame the app. Check
+&lt;code&gt;/etc/resolv.conf&lt;/code&gt; first.&lt;/p&gt;
+&lt;h2 id="what-was-actually-happening"&gt;What was actually happening&lt;/h2&gt;
+&lt;p&gt;Run Tailscale on a Proxmox host or one of its containers, even briefly,
+even just to test something, then remove it, and it can leave behind a
+stale &lt;code&gt;search&lt;/code&gt; directive in the resolver config:&lt;/p&gt;</description></item></channel></rss>
